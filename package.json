@@ -1,0 +1,8 @@
+{
+  "name": "ver",
+  "packageManager": "yarn@4.6.0",
+  "dependencies": {
+    "commander": "^13.1.0",
+    "zx": "^8.4.1"
+  }
+}
