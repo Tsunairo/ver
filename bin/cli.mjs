@@ -1,6 +1,8 @@
 #!/usr/bin/env node
 import { Command } from 'commander';
-import init from '../commands/init.mjs';
+import init from '../commands/init';
+import bump from '../commands/core';
+
 const program = new Command();
 
 program
@@ -11,7 +13,13 @@ program
 program.command('init')
   .description('Initialize the project')
   .action(async () => {
-    await init()
+    await init();
+  });
+
+program.command('bump')
+  .description('Bump version')
+  .action(async () => {
+    await bump();
   });
 
 program.parse(process.argv);
