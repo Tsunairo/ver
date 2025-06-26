@@ -1,9 +1,9 @@
 #!/usr/bin/env zx
 
 import { chalk, echo, question, spinner, fs, argv, $ } from 'zx';
-import { GitCommandOutput, VersionConfig } from '../resources/types';
-import { validateBumpBranch, validateBumpType, validateConfig, validateVersion } from '../resources/validators';
-import { handleError, hasUncommittedChanges, isPushSuccessful } from '../resources/helpers';
+import { GitCommandOutput, VersionConfig } from '../utils/types';
+import { validateBumpBranch, validateBumpType, validateConfig, validateVersion } from '../utils/validators';
+import { handleError, hasUncommittedChanges, isPushSuccessful } from '../utils/helpers';
 
 let type: string = (argv.type as string)?.toUpperCase();
 const verConfigPath = "ver.config.json";

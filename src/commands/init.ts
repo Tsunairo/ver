@@ -1,14 +1,16 @@
 #!/usr/bin/env zx
 
 import { chalk, echo, question, spinner, fs, argv, $ } from 'zx';
-import { VersionConfig } from '../resources/types';
-import { validateInitBranch, validateInitPreReleaseName } from '../resources/validators';
+import { VersionConfig } from '../utils/types';
+import { isGitRepository, validateInitBranch, validateInitPreReleaseName } from '../utils/validators';
 
 
 type Question<T> = {
   name: string;
   message: string;
+  choices?: string[];
   default?: string;
+  preCondition?: () => boolean | Promise<boolean>;
   validate?: (input: string) => Promise<string | boolean> | boolean;
   answer: (input: string) => T;
 }
@@ -71,19 +73,21 @@ const preReleaseBranchesQuestion: Question<Map<string, string>> = {
       if (!branch.includes(':')) {
         return `Invalid format for branch: ${branch}. Use branch:release-name format.`;
       }
-      else {
-        const [branchName, releaseName] = branch.split(':');
-        const validateBranchResponse = await validateInitBranch(branchName.trim());
-        const validatePreReleaseNameResponse = validateInitPreReleaseName(releaseName.trim(), branchAndPrNames.map(b => b.split(':')[1].trim()));
-        if(!validateBranchResponse.isValid) {
-          echo(chalk.redBright(validateBranchResponse.message));
-          return false;
-        }
-        if(!validatePreReleaseNameResponse.isValid) {
-          echo(chalk.redBright(validatePreReleaseNameResponse.message));
-          return false;
-        }
-        return true;
+
+      const [branchName, releaseName] = branch.split(':');
+      const validateBranchResponse = await validateInitBranch(branchName.trim());
+      const validatePreReleaseNameResponse = validateInitPreReleaseName(
+        releaseName.trim(),
+        branchAndPrNames.map(b => b.split(':')[1].trim())
+      );
+
+      if (!validateBranchResponse.isValid) {
+        echo(chalk.redBright(validateBranchResponse.message));
+        return false;
+      }
+      if (!validatePreReleaseNameResponse.isValid) {
+        echo(chalk.redBright(validatePreReleaseNameResponse.message));
+        return false;
       }
     }
     return true;
@@ -98,11 +102,34 @@ const preReleaseBranchesQuestion: Question<Map<string, string>> = {
   }
 };
 
+const remoteQuestion: Question<string> = {
+  name: 'remote',
+  message: 'Release branch (e.g., main):',
+  preCondition: async () => {
+    const isGitRepositoryResponse = await isGitRepository();
+    return isGitRepositoryResponse.isValid;
+  },
+  validate: async (input: string) => {
+    const validateBranchResponse = await validateInitBranch(input.trim());
+    if (!validateBranchResponse.isValid) {
+      echo(chalk.redBright(validateBranchResponse.message));
+      return false;
+    }
+    return true;
+  },
+  answer: (input: string) => input.trim() || 'current'
+};
+
 const autoPushToRemoteQuestion: Question<boolean> = {
   name: 'autoPushToRemote',
-  message: 'Auto push to remote? (y/n):',
+  message: 'Auto push to remote?',
+  preCondition: async () => {
+    const isGitRepositoryResponse = await isGitRepository();
+    return isGitRepositoryResponse.isValid;
+  },
+  choices: ['yes', 'no'],
   default: 'yes',
-  answer: (input: string) => input.toLowerCase() === 'yes' || input.toLowerCase() === 'y'
+  answer: (input: string) => input.toLowerCase() === 'yes'
 };
 
 const questions = [
@@ -110,10 +137,18 @@ const questions = [
   currentVersionQuestion,
   releaseBranchQuestion,
   preReleaseBranchesQuestion,
+  remoteQuestion,
   autoPushToRemoteQuestion
 ];
 
 const init = async () => {
+  if (fs.existsSync('ver.config.json')) {
+    const overwrite = await question('Configuration exists. Overwrite? (y/n):');
+    if (overwrite.toLowerCase() !== 'y') {
+      echo(chalk.yellow('Initialization aborted.'));
+      return;
+    }
+  }
   const verConfig: VersionConfig = {
     current: '1.0.0',
     precededBy: '',
@@ -121,13 +156,17 @@ const init = async () => {
     preReleaseBranches: {},
     autoPushToRemote: false,
     pushedToRemote: [],
-    remote: 'origin'
+    remote: '',
   };
 
   for (const q of questions) {
+    if (q.preCondition && !(await q.preCondition())) {
+      // echo(chalk.yellow(`Skipping question: ${q.message}`));
+      continue;
+    }
     let answer;
     do {
-      const userInput = await question(q.message);
+      const userInput = await question(q.message, {choices: q.choices ?? []});
       if (q.validate) {
         const validationResult = await q.validate(userInput);
         if (validationResult !== true) {
@@ -143,7 +182,7 @@ const init = async () => {
     verConfig[q.name] = answer;
   }
 
-  fs.writeFileSync('verConfig.json', JSON.stringify(verConfig, null, 2));
+  fs.writeFileSync('ver.config.json', JSON.stringify(verConfig, null, 2));
   echo(chalk.greenBright('Version configuration initialized successfully.'));
 };
 

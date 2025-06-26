@@ -129,3 +129,17 @@ export const validateVersion = (version: string): ValidationResponse => {
     isValid: true
   };
 };
+
+export const isGitRepository = async (): Promise<ValidationResponse> => {
+  try {
+    await $`git rev-parse --is-inside-work-tree`;
+    return {
+      isValid: true
+    };
+  } catch (error) {
+    return {
+      isValid: false,
+      message: 'This command must be run inside a Git repository.'
+    }
+  }
+}

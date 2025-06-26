@@ -19,7 +19,7 @@ interface VersionParts {
 }
 
 export interface ValidationResponse {
-  isValid?: boolean;
+  isValid: boolean;
   message?: string;
 }
 

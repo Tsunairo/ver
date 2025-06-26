@@ -1,7 +1,8 @@
-#!/usr/bin/env node
+#!/usr/bin/env zx
+
 import { Command } from 'commander';
-import init from '../commands/init';
-import bump from '../commands/core';
+import init from './commands/init';
+import bump from './commands/bump';
 
 const program = new Command();
 
@@ -23,3 +24,10 @@ program.command('bump')
   });
 
 program.parse(process.argv);
+/*
+To run the "init" command from the terminal, use:
+  node /workspaces/ver/bin/cli.mjs init
+
+Or, if you have made the file executable (with chmod +x /workspaces/ver/bin/cli.mjs), you can run:
+  ./bin/cli.mjs init
+*/
