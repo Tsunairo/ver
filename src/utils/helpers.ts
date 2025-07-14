@@ -1,6 +1,7 @@
 #!/usr/bin/env zx
 
-import { chalk, $ } from 'zx';
+import { chalk, $, question } from 'zx';
+import { select } from '@inquirer/prompts';
 
 export const handleError = (error: Error, context: string): void => {
   console.error(chalk.red(`Error in ${context}:`));
@@ -30,3 +31,11 @@ export const isPushSuccessful = async (commitHash: string): Promise<boolean> => 
     return false;
   }
 };
+
+export const prompt = async (message: string, choices?: {name: string, value: string}[]): Promise<string> => {
+  return choices ? await select({
+      message: message,
+      choices: choices
+    })
+  : await question(message);
+}

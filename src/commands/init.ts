@@ -2,14 +2,16 @@
 
 import { chalk, echo, question, spinner, fs, argv, $ } from 'zx';
 import { VersionConfig } from '../utils/types';
-import { isGitRepository, validateInitBranch, validateInitPreReleaseName } from '../utils/validators';
+import { isGitRepository, validateInitBranch, validateInitPreReleaseName, validateRemote } from '../utils/validators';
+import { prompt } from '../utils/helpers';
 
 
 type Question<T> = {
   name: string;
   message: string;
-  choices?: string[];
-  default?: string;
+  choices?: {name: string, value: string}[];
+  required: boolean;
+  default?: any;
   preCondition?: () => boolean | Promise<boolean>;
   validate?: (input: string) => Promise<string | boolean> | boolean;
   answer: (input: string) => T;
@@ -19,12 +21,13 @@ const projectNameQuestion: Question<string> = {
   name: 'name',
   message: 'Project name:',
   default: 'my-project',
+  required: true,
   validate: (input: string) => {
     if (!input) {
       console.log(chalk.redBright('Project name cannot be empty.'));
       return false;
     }
-    if (/^[a-zA-Z0-9._-]+$/.test(input)) {
+    if (!/^[a-zA-Z0-9._-]+$/.test(input)) {
       console.log(chalk.redBright('Project name can only contain alphanumeric characters, dots, underscores, and hyphens.'));
       return false;
     }
@@ -37,6 +40,7 @@ const currentVersionQuestion: Question<string> = {
   name: 'current',
   message: 'Current version (e.g., 1.0.0):',
   default: '1.0.0',
+  required: true,
   validate: (input: string) => {
     const semverRegex = /^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-((?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?$/;
     if (!semverRegex.test(input)) {
@@ -51,6 +55,7 @@ const currentVersionQuestion: Question<string> = {
 const releaseBranchQuestion: Question<string> = {
   name: 'releaseBranch',
   message: 'Release branch (e.g., main):',
+  required: true,
   default: 'current',
   validate: async (input: string) => {
     const validateBranchResponse = await validateInitBranch(input.trim());
@@ -65,8 +70,9 @@ const releaseBranchQuestion: Question<string> = {
 
 const preReleaseBranchesQuestion: Question<Map<string, string>> = {
   name: 'preReleaseBranches',
-  message: 'Pre-release branches ([branch:release-name] comma-separated, e.g., development:dev,staging:staging):',
-  default: 'dev,staging',
+  message: 'Pre-release branches - comma-separated, e.g., development:dev,staging:staging',
+  default: {},
+  required: false,
   validate: async (input: string) => {
     const branchAndPrNames = input.split(',').map(b => b.trim());
     for (const branch of branchAndPrNames) {
@@ -104,15 +110,16 @@ const preReleaseBranchesQuestion: Question<Map<string, string>> = {
 
 const remoteQuestion: Question<string> = {
   name: 'remote',
-  message: 'Release branch (e.g., main):',
+  message: 'Remote (e.g., origin):',
+  required: true,
   preCondition: async () => {
     const isGitRepositoryResponse = await isGitRepository();
     return isGitRepositoryResponse.isValid;
   },
   validate: async (input: string) => {
-    const validateBranchResponse = await validateInitBranch(input.trim());
-    if (!validateBranchResponse.isValid) {
-      echo(chalk.redBright(validateBranchResponse.message));
+    const validateRemoteResponse = await validateRemote(input.trim());
+    if (!validateRemoteResponse.isValid) {
+      echo(chalk.redBright(validateRemoteResponse.message));
       return false;
     }
     return true;
@@ -123,11 +130,12 @@ const remoteQuestion: Question<string> = {
 const autoPushToRemoteQuestion: Question<boolean> = {
   name: 'autoPushToRemote',
   message: 'Auto push to remote?',
+  required: true,
   preCondition: async () => {
     const isGitRepositoryResponse = await isGitRepository();
     return isGitRepositoryResponse.isValid;
   },
-  choices: ['yes', 'no'],
+  choices: [{name: "Yes", value: "yes"}, {name: "No", value: "no"}],
   default: 'yes',
   answer: (input: string) => input.toLowerCase() === 'yes'
 };
@@ -142,6 +150,7 @@ const questions = [
 ];
 
 const init = async () => {
+  echo(chalk.blueBright('Initializing version configuration...'));
   if (fs.existsSync('ver.config.json')) {
     const overwrite = await question('Configuration exists. Overwrite? (y/n):');
     if (overwrite.toLowerCase() !== 'y') {
@@ -166,8 +175,12 @@ const init = async () => {
     }
     let answer;
     do {
-      const userInput = await question(q.message, {choices: q.choices ?? []});
-      if (q.validate) {
+      console.log("choices ", q.choices)
+      const userInput = await prompt(q.message, q.choices);
+      if(!userInput && !q.required) {
+        answer = q.default;
+      }
+      else if (q.validate) {
         const validationResult = await q.validate(userInput);
         if (validationResult !== true) {
           echo(chalk.redBright(validationResult));
@@ -175,11 +188,12 @@ const init = async () => {
         }
         else {
           answer = q.answer(userInput);
+          console.log(chalk.greenBright(`Answer accepted: ${answer}`));
         }
       }
       break;
     } while (true);
-    verConfig[q.name] = answer;
+    (verConfig as any)[q.name] = answer; // TODO: Create a proper type-safe solution
   }
 
   fs.writeFileSync('ver.config.json', JSON.stringify(verConfig, null, 2));

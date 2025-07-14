@@ -3,14 +3,17 @@
   "packageManager": "yarn@4.6.0",
   "dependencies": {
     "commander": "^13.1.0",
+    "inquirer": "^12.6.3",
     "typescript": "^5.8.3",
     "zx": "^8.4.1"
+  },
+  "scripts": {
+    "compile": "tsc --outDir dist"
   },
   "devDependencies": {
     "@types/node": "^22.15.29"
   },
   "bin": {
-    "ver": "dist/cli.ts"
+    "ver": "dist/cli.js"
   }
-
 }

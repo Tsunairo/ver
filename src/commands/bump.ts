@@ -19,19 +19,6 @@ let verConfig: VersionConfig = {
   remote: 'origin'
 };
 
-// Update config reading:
-try {
-  verConfig = JSON.parse(fs.readFileSync(verConfigPath, 'utf8'));
-  const validateConfigResponse = validateConfig(verConfig);
-  if (!validateConfigResponse.isValid) {
-    handleError(new Error(validateConfigResponse.message), 'Configuration Validation');
-    process.exit(1);
-  }
-} catch (error) {
-  handleError(error as Error, 'Configuration');
-  process.exit(1);
-}
-
 const pushVersion = async () => {
   const pushOps = [
     $`git push -u ${verConfig.remote} ${verConfig.releaseBranch}`,
@@ -93,12 +80,25 @@ const createVersion = async (newVersion: string): Promise<void> => {
       console.log(chalk.greenBright(`Version ${newVersion} created 👍✅!`));
       await pushVersion();
     } catch (error) {
-      handleError(error, "Pushing Version")
+      handleError(error as Error, "Pushing Version")
     }
   });
 };
 
 const bump = async (): Promise<void> => {
+  // Update config reading:
+  try {
+    verConfig = JSON.parse(fs.readFileSync(verConfigPath, 'utf8'));
+    const validateConfigResponse = validateConfig(verConfig);
+    if (!validateConfigResponse.isValid) {
+      handleError(new Error(validateConfigResponse.message), 'Configuration Validation');
+      process.exit(1);
+    }
+  } catch (error) {
+    echo("rada")
+    handleError(error as Error, 'Configuration');
+    process.exit(1);
+  }
   try {
     let branch: string = (await $`git branch -r --contains $TAG_COMMIT | grep -v '\->' | sed 's|origin/||' | head -n 1 | xargs`).stdout.trim();
     if(!type) {

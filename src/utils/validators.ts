@@ -10,7 +10,7 @@ export const validateInitBranch = async (branch: string): Promise<ValidationResp
       message: 'Branch name cannot be empty.'
     };
   }
-  if (/^[a-zA-Z0-9._-]+$/.test(branch)) {
+  if (!/^[a-zA-Z0-9._-]+$/.test(branch)) {
     return {
       isValid: false,
       message: 'Branch name can only contain alphanumeric characters, dots, underscores, and hyphens.'
@@ -97,10 +97,10 @@ export const validateBumpType = (type: string, branch: string, verConfig: Versio
 };
 
 export const validateConfig = (config: VersionConfig): ValidationResponse => {
-  const requiredFields = ['current', 'releaseBranch', 'preReleaseBranches'];
+  const requiredFields = ['current', 'releaseBranch', 'preReleaseBranches'] as const;
   const missingFields: string[] = [];
   for (const field of requiredFields) {
-    if (!config[field]) {
+    if (!config[field as keyof VersionConfig]) {
       missingFields.push(field);
     }
   }
@@ -142,4 +142,14 @@ export const isGitRepository = async (): Promise<ValidationResponse> => {
       message: 'This command must be run inside a Git repository.'
     }
   }
-}
+};
+
+
+export const validateRemote = async (remote: string) => {
+  try {
+    await $`git remote get-url ${remote}`;
+    return { isValid: true };
+  } catch {
+    return { isValid: false, message: `Remote "${remote}" does not exist.` };
+  }
+};
