@@ -2,10 +2,9 @@
 
 import { chalk, echo, question, spinner, fs, argv, $ } from 'zx';
 import { GitCommandOutput, VersionConfig } from '../utils/types';
-import { validateBumpBranch, validateBumpType, validateConfig, validateVersion } from '../utils/validators';
-import { handleError, hasUncommittedChanges, isPushSuccessful } from '../utils/helpers';
+import { validateBumpBranchAndType, validateBumpType, validateConfig, validateVersion } from '../utils/validators';
+import { handleError, hasUncommittedChanges, isPushSuccessful, prompt } from '../utils/helpers';
 
-let type: string = (argv.type as string)?.toUpperCase();
 const verConfigPath = "ver.config.json";
 
 // Initialize with default values
@@ -56,12 +55,12 @@ const pushVersion = async () => {
 
 const createVersion = async (newVersion: string): Promise<void> => {
   if (await hasUncommittedChanges()) {
-    const proceed = await question(
-      chalk.yellow('\nThere are uncommitted changes in your working directory. Proceed anyway? (y/n) ')
+    const proceed = await prompt(
+      chalk.yellow('\nThere are uncommitted changes in your working directory. Proceed anyway ? '), [{name: 'Yes', value: 'yes'}, {name: 'No', value: 'no'}]
     );
     
-    if (proceed.toLowerCase() !== 'y') {
-      echo(chalk.redBright('Version creation cancelled. Please commit or stash your changes first.'));
+    if (proceed.toLowerCase() !== 'yes') {
+      echo(chalk.yellowBright('Version creation cancelled. Please commit or stash your changes first.'));
       process.exit(1);
     }
   }
@@ -85,7 +84,7 @@ const createVersion = async (newVersion: string): Promise<void> => {
   });
 };
 
-const bump = async (): Promise<void> => {
+const bump = async (type: string): Promise<void> => {
   // Update config reading:
   try {
     verConfig = JSON.parse(fs.readFileSync(verConfigPath, 'utf8'));
@@ -100,22 +99,17 @@ const bump = async (): Promise<void> => {
     process.exit(1);
   }
   try {
-    let branch: string = (await $`git branch -r --contains $TAG_COMMIT | grep -v '\->' | sed 's|origin/||' | head -n 1 | xargs`).stdout.trim();
-    if(!type) {
-    }
-    const validateBranchResponse = await validateBumpBranch(branch, verConfig);
-    const validateTypeResponse = validateBumpType(type, branch, verConfig);
+    let branch: string = (await $`git rev-parse --abbrev-ref HEAD`).stdout.trim();
+    const validateBranchResponse = validateBumpBranchAndType(branch, type.toUpperCase(), verConfig);
     if (!validateBranchResponse.isValid) {
-      handleError(new Error(validateBranchResponse.message), "Bump Branch Validation");
+      handleError(new Error(validateBranchResponse.message), "Bump Branch & Type Validation");
       process.exit(1);
-    }
-    if (!validateTypeResponse.isValid) {
-      handleError(new Error(validateTypeResponse.message), "Bump Type Validation");
-      type = (await question(`\nVersion type : `, {choices: branch !== verConfig.releaseBranch ? ['MAJOR', 'MINOR', 'PATCH'] : ['PRE-RELEASE']})).toUpperCase();
     }
     await spinner('Pulling...', () => $`git pull`);
 
+    
     let version = verConfig.current.split("-")[0] ?? "1.0.0";
+    console.log(version)
     let [majorVersion, minorVersion, patchVersion] = version.split(".").map(Number);
 
     let preRelease: string | undefined;
@@ -162,7 +156,7 @@ const bump = async (): Promise<void> => {
       process.exit(1);
     }
     
-    const pushNewVersionInput = await question(`\nCreate new version: ${newVersion} ?`, { choices: ['yes', 'no'] });
+    const pushNewVersionInput = await prompt(`\nCreate new version: ${newVersion} ?`, [{name: 'Yes', value: 'yes'}, {name: 'No', value: 'no'}]);
     if (pushNewVersionInput.toLowerCase() === "yes") {
       await createVersion(newVersion);
     } else {

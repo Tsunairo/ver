@@ -9,12 +9,10 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
-var _a;
 Object.defineProperty(exports, "__esModule", { value: true });
 const zx_1 = require("zx");
 const validators_1 = require("../utils/validators");
 const helpers_1 = require("../utils/helpers");
-let type = (_a = zx_1.argv.type) === null || _a === void 0 ? void 0 : _a.toUpperCase();
 const verConfigPath = "ver.config.json";
 // Initialize with default values
 let verConfig = {
@@ -59,9 +57,9 @@ const pushVersion = () => __awaiter(void 0, void 0, void 0, function* () {
 });
 const createVersion = (newVersion) => __awaiter(void 0, void 0, void 0, function* () {
     if (yield (0, helpers_1.hasUncommittedChanges)()) {
-        const proceed = yield (0, zx_1.question)(zx_1.chalk.yellow('\nThere are uncommitted changes in your working directory. Proceed anyway? (y/n) '));
-        if (proceed.toLowerCase() !== 'y') {
-            (0, zx_1.echo)(zx_1.chalk.redBright('Version creation cancelled. Please commit or stash your changes first.'));
+        const proceed = yield (0, helpers_1.prompt)(zx_1.chalk.yellow('\nThere are uncommitted changes in your working directory. Proceed anyway ? '), [{ name: 'Yes', value: 'yes' }, { name: 'No', value: 'no' }]);
+        if (proceed.toLowerCase() !== 'yes') {
+            (0, zx_1.echo)(zx_1.chalk.yellowBright('Version creation cancelled. Please commit or stash your changes first.'));
             process.exit(1);
         }
     }
@@ -83,7 +81,7 @@ const createVersion = (newVersion) => __awaiter(void 0, void 0, void 0, function
         }
     }));
 });
-const bump = () => __awaiter(void 0, void 0, void 0, function* () {
+const bump = (type) => __awaiter(void 0, void 0, void 0, function* () {
     var _a;
     // Update config reading:
     try {
@@ -100,21 +98,15 @@ const bump = () => __awaiter(void 0, void 0, void 0, function* () {
         process.exit(1);
     }
     try {
-        let branch = (yield (0, zx_1.$) `git branch -r --contains $TAG_COMMIT | grep -v '\->' | sed 's|origin/||' | head -n 1 | xargs`).stdout.trim();
-        if (!type) {
-        }
-        const validateBranchResponse = yield (0, validators_1.validateBumpBranch)(branch, verConfig);
-        const validateTypeResponse = (0, validators_1.validateBumpType)(type, branch, verConfig);
+        let branch = (yield (0, zx_1.$) `git rev-parse --abbrev-ref HEAD`).stdout.trim();
+        const validateBranchResponse = (0, validators_1.validateBumpBranchAndType)(branch, type.toUpperCase(), verConfig);
         if (!validateBranchResponse.isValid) {
-            (0, helpers_1.handleError)(new Error(validateBranchResponse.message), "Bump Branch Validation");
+            (0, helpers_1.handleError)(new Error(validateBranchResponse.message), "Bump Branch & Type Validation");
             process.exit(1);
-        }
-        if (!validateTypeResponse.isValid) {
-            (0, helpers_1.handleError)(new Error(validateTypeResponse.message), "Bump Type Validation");
-            type = (yield (0, zx_1.question)(`\nVersion type : `, { choices: branch !== verConfig.releaseBranch ? ['MAJOR', 'MINOR', 'PATCH'] : ['PRE-RELEASE'] })).toUpperCase();
         }
         yield (0, zx_1.spinner)('Pulling...', () => (0, zx_1.$) `git pull`);
         let version = (_a = verConfig.current.split("-")[0]) !== null && _a !== void 0 ? _a : "1.0.0";
+        console.log(version);
         let [majorVersion, minorVersion, patchVersion] = version.split(".").map(Number);
         let preRelease;
         let preReleaseName;
@@ -157,7 +149,7 @@ const bump = () => __awaiter(void 0, void 0, void 0, function* () {
             (0, helpers_1.handleError)(new Error(validateVersionResponse.message), "Version Validation");
             process.exit(1);
         }
-        const pushNewVersionInput = yield (0, zx_1.question)(`\nCreate new version: ${newVersion} ?`, { choices: ['yes', 'no'] });
+        const pushNewVersionInput = yield (0, helpers_1.prompt)(`\nCreate new version: ${newVersion} ?`, [{ name: 'Yes', value: 'yes' }, { name: 'No', value: 'no' }]);
         if (pushNewVersionInput.toLowerCase() === "yes") {
             yield createVersion(newVersion);
         }

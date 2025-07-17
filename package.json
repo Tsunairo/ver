@@ -8,12 +8,12 @@
     "zx": "^8.4.1"
   },
   "scripts": {
-    "compile": "tsc --outDir dist"
+    "compile": "tsc --outDir dist && npm link"
   },
   "devDependencies": {
     "@types/node": "^22.15.29"
   },
   "bin": {
-    "ver": "dist/cli.js"
+    "ver": "./dist/cli.js"
   }
 }

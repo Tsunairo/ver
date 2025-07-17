@@ -48,6 +48,6 @@ const prompt = (message, choices) => __awaiter(void 0, void 0, void 0, function*
         message: message,
         choices: choices
     })
-        : yield (0, zx_1.question)(message);
+        : yield (0, zx_1.question)(message + " ");
 });
 exports.prompt = prompt;

@@ -53,18 +53,33 @@ export const validateInitPreReleaseName = (name: string, otherNames: string[]): 
   };
 };
 
-export const validateBumpBranch = (branch: string, verConfig: VersionConfig): ValidationResponse => {
-  if(branch !== verConfig.releaseBranch) {
+export const validateBumpBranchAndType = (branch: string, type: string, verConfig: VersionConfig): ValidationResponse => {
+  const validBranches = [verConfig.releaseBranch, ...Object.values(verConfig.preReleaseBranches)]
+  if(!validBranches.includes(branch)) {
     return {
       isValid: false,
-      message: `Branch ${branch} is not a valid release branch. Valid branches is: ${verConfig.releaseBranch}`
+      message: `Branch ${branch} is not a branch for bumping. Valid branches is: [${validBranches.join(", ")}]`
     };
   }
-  if (!verConfig.preReleaseBranches[branch]) {
-    return {
-      isValid: false,
-      message: `Branch ${branch} is not a valid pre-release branch. Valid branches are: ${Object.keys(verConfig.preReleaseBranches).join(', ')}`
-    };
+  else {
+    if (!['MAJOR', 'MINOR', 'PATCH', 'PRE-RELEASE'].includes(type)) {
+      return {
+        isValid: false,
+        message: `Invalid bump type: ${type}. Must be one of MAJOR, MINOR, PATCH, PRE-RELEASE.`
+      };
+    }
+    if(branch === verConfig.releaseBranch && type === "PRE-RELEASE") {
+      return {
+        isValid: false,
+        message: "Pre-release type cannot be used in the release branch."
+      };
+    }
+    if (type === "PRE-RELEASE" && !verConfig.preReleaseBranches[branch]) {
+      return {
+        isValid: false,
+        message: `Branch ${branch} is not a valid pre-release branch. Valid branches are: ${Object.keys(verConfig.preReleaseBranches).join(', ')}`
+      };
+    }
   }
 
   return {

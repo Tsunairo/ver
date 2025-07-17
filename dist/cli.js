@@ -20,9 +20,13 @@ program
     .description('Ver CLI for managing project versions');
 program.command('bump')
     .description('Bump version')
-    .action(() => __awaiter(void 0, void 0, void 0, function* () {
-    console.log('Bumping version...');
-    yield (0, commands_1.bump)();
+    .option('--major', 'create major release')
+    .option('--minor', 'create minor release')
+    .option('--patch', 'create patch release')
+    .option('--pre-release', 'create pre release')
+    .action((options) => __awaiter(void 0, void 0, void 0, function* () {
+    console.log(options);
+    yield (0, commands_1.bump)('patch');
 }));
 program.command('init')
     .description('Initialize the project')

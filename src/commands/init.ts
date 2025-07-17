@@ -175,7 +175,6 @@ const init = async () => {
     }
     let answer;
     do {
-      console.log("choices ", q.choices)
       const userInput = await prompt(q.message, q.choices);
       if(!userInput && !q.required) {
         answer = q.default;
@@ -188,7 +187,6 @@ const init = async () => {
         }
         else {
           answer = q.answer(userInput);
-          console.log(chalk.greenBright(`Answer accepted: ${answer}`));
         }
       }
       break;

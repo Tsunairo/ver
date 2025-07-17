@@ -10,7 +10,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.validateRemote = exports.isGitRepository = exports.validateVersion = exports.validateConfig = exports.validateBumpType = exports.validateBumpBranch = exports.validateInitPreReleaseName = exports.validateInitBranch = void 0;
+exports.validateRemote = exports.isGitRepository = exports.validateVersion = exports.validateConfig = exports.validateBumpType = exports.validateBumpBranchAndType = exports.validateInitPreReleaseName = exports.validateInitBranch = void 0;
 const zx_1 = require("zx");
 const validateInitBranch = (branch) => __awaiter(void 0, void 0, void 0, function* () {
     if (!branch) {
@@ -62,24 +62,39 @@ const validateInitPreReleaseName = (name, otherNames) => {
     };
 };
 exports.validateInitPreReleaseName = validateInitPreReleaseName;
-const validateBumpBranch = (branch, verConfig) => {
-    if (branch !== verConfig.releaseBranch) {
+const validateBumpBranchAndType = (branch, type, verConfig) => {
+    const validBranches = [verConfig.releaseBranch, ...Object.values(verConfig.preReleaseBranches)];
+    if (!validBranches.includes(branch)) {
         return {
             isValid: false,
-            message: `Branch ${branch} is not a valid release branch. Valid branches is: ${verConfig.releaseBranch}`
+            message: `Branch ${branch} is not a branch for bumping. Valid branches is: [${validBranches.join(", ")}]`
         };
     }
-    if (!verConfig.preReleaseBranches[branch]) {
-        return {
-            isValid: false,
-            message: `Branch ${branch} is not a valid pre-release branch. Valid branches are: ${Object.keys(verConfig.preReleaseBranches).join(', ')}`
-        };
+    else {
+        if (!['MAJOR', 'MINOR', 'PATCH', 'PRE-RELEASE'].includes(type)) {
+            return {
+                isValid: false,
+                message: `Invalid bump type: ${type}. Must be one of MAJOR, MINOR, PATCH, PRE-RELEASE.`
+            };
+        }
+        if (branch === verConfig.releaseBranch && type === "PRE-RELEASE") {
+            return {
+                isValid: false,
+                message: "Pre-release type cannot be used in the release branch."
+            };
+        }
+        if (type === "PRE-RELEASE" && !verConfig.preReleaseBranches[branch]) {
+            return {
+                isValid: false,
+                message: `Branch ${branch} is not a valid pre-release branch. Valid branches are: ${Object.keys(verConfig.preReleaseBranches).join(', ')}`
+            };
+        }
     }
     return {
         isValid: true
     };
 };
-exports.validateBumpBranch = validateBumpBranch;
+exports.validateBumpBranchAndType = validateBumpBranchAndType;
 const validateBumpType = (type, branch, verConfig) => {
     if (!['MAJOR', 'MINOR', 'PATCH', 'PRE-RELEASE'].includes(type)) {
         return {

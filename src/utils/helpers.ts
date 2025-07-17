@@ -37,5 +37,5 @@ export const prompt = async (message: string, choices?: {name: string, value: st
       message: message,
       choices: choices
     })
-  : await question(message);
+  : await question(message + " ");
 }

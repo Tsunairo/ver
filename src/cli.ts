@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 
+
 import { Command } from 'commander';
 import { init, bump } from './commands'; 
 
@@ -13,9 +14,13 @@ program
 
 program.command('bump')
   .description('Bump version')
-  .action(async () => {
-    console.log('Bumping version...');
-    await bump();
+  .option('--major', 'create major release')
+  .option('--minor', 'create minor release')
+  .option('--patch', 'create patch release')
+  .option('--pre-release', 'create pre release')
+  .action(async (options) => {
+    console.log(options);
+    await bump('patch');
   });
 
   program.command('init')

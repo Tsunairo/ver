@@ -158,7 +158,6 @@ const init = () => __awaiter(void 0, void 0, void 0, function* () {
         }
         let answer;
         do {
-            console.log("choices ", q.choices);
             const userInput = yield (0, helpers_1.prompt)(q.message, q.choices);
             if (!userInput && !q.required) {
                 answer = q.default;
@@ -171,7 +170,6 @@ const init = () => __awaiter(void 0, void 0, void 0, function* () {
                 }
                 else {
                     answer = q.answer(userInput);
-                    console.log(zx_1.chalk.greenBright(`Answer accepted: ${answer}`));
                 }
             }
             break;
