@@ -109,7 +109,6 @@ const bump = async (type: string): Promise<void> => {
 
     
     let version = verConfig.current.split("-")[0] ?? "1.0.0";
-    console.log(version)
     let [majorVersion, minorVersion, patchVersion] = version.split(".").map(Number);
 
     let preRelease: string | undefined;

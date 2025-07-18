@@ -106,7 +106,6 @@ const bump = (type) => __awaiter(void 0, void 0, void 0, function* () {
         }
         yield (0, zx_1.spinner)('Pulling...', () => (0, zx_1.$) `git pull`);
         let version = (_a = verConfig.current.split("-")[0]) !== null && _a !== void 0 ? _a : "1.0.0";
-        console.log(version);
         let [majorVersion, minorVersion, patchVersion] = version.split(".").map(Number);
         let preRelease;
         let preReleaseName;

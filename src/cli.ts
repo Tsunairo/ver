@@ -19,7 +19,6 @@ program.command('bump')
   .option('--patch', 'create patch release')
   .option('--pre-release', 'create pre release')
   .action(async (options) => {
-    console.log(options);
     await bump(Object.keys(options)[0].toUpperCase());
   });
 

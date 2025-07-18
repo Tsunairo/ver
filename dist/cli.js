@@ -25,7 +25,6 @@ program.command('bump')
     .option('--patch', 'create patch release')
     .option('--pre-release', 'create pre release')
     .action((options) => __awaiter(void 0, void 0, void 0, function* () {
-    console.log(options);
     yield (0, commands_1.bump)(Object.keys(options)[0].toUpperCase());
 }));
 program.command('init')
