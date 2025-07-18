@@ -99,7 +99,7 @@ const bump = (type) => __awaiter(void 0, void 0, void 0, function* () {
     }
     try {
         let branch = (yield (0, zx_1.$) `git rev-parse --abbrev-ref HEAD`).stdout.trim();
-        const validateBranchResponse = (0, validators_1.validateBumpBranchAndType)(branch, type.toUpperCase(), verConfig);
+        const validateBranchResponse = (0, validators_1.validateBumpBranchAndType)(branch, type, verConfig);
         if (!validateBranchResponse.isValid) {
             (0, helpers_1.handleError)(new Error(validateBranchResponse.message), "Bump Branch & Type Validation");
             process.exit(1);

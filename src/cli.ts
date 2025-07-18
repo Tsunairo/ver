@@ -20,7 +20,7 @@ program.command('bump')
   .option('--pre-release', 'create pre release')
   .action(async (options) => {
     console.log(options);
-    await bump('patch');
+    await bump(Object.keys(options)[0].toUpperCase());
   });
 
   program.command('init')

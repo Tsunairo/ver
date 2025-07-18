@@ -100,7 +100,7 @@ const bump = async (type: string): Promise<void> => {
   }
   try {
     let branch: string = (await $`git rev-parse --abbrev-ref HEAD`).stdout.trim();
-    const validateBranchResponse = validateBumpBranchAndType(branch, type.toUpperCase(), verConfig);
+    const validateBranchResponse = validateBumpBranchAndType(branch, type, verConfig);
     if (!validateBranchResponse.isValid) {
       handleError(new Error(validateBranchResponse.message), "Bump Branch & Type Validation");
       process.exit(1);

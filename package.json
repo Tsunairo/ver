@@ -1,5 +1,5 @@
 {
-  "name": "ver",
+  "name": "verzh",
   "packageManager": "yarn@4.6.0",
   "dependencies": {
     "commander": "^13.1.0",
@@ -14,6 +14,6 @@
     "@types/node": "^22.15.29"
   },
   "bin": {
-    "ver": "./dist/cli.js"
+    "verzh": "./dist/cli.js"
   }
 }
